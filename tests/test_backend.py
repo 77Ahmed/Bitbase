@@ -90,7 +90,13 @@ def test_only_youtube_links_use_the_proxy(monkeypatch):
     assert "proxy" not in main.ydl_opts("https://notyoutube.com/x")
 
 
-def test_warp_is_off_by_default(monkeypatch):
-    monkeypatch.delenv("YOUTUBE_WARP", raising=False)
-    import warp
-    assert warp.status() == "off" and warp.proxy_url() is None
+def test_cookies_from_render_secret_file(tmp_path, monkeypatch):
+    secret = tmp_path / "cookies.txt"
+    secret.write_text("# Netscape HTTP Cookie File\n" + ".youtube.com\tTRUE\t/\tTRUE\t0\tPREF\tf1=50000000\n" * 3)
+    monkeypatch.setattr(main, "SECRET_COOKIES_FILE", secret)
+    monkeypatch.setattr(main, "COOKIES_FILE", tmp_path / "missing.txt")
+    monkeypatch.setattr(main, "_tmp_cookie_path", None)
+    path = main.get_cookies_file()
+    assert path and path != str(secret)          # a writable copy, not the read-only original
+    assert Path(path).read_text() == secret.read_text()
+    assert main._cookie_source == "secret file"

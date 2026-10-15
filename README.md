@@ -114,11 +114,19 @@ docker run -p 4000:4000 bitbase
 
 ### YouTube blocking your server?
 
-YouTube often asks cloud servers to "sign in to confirm you're not a bot". Other sites aren't affected. Try these in order:
+YouTube often asks cloud servers to "sign in to confirm you're not a bot". Other sites aren't affected. The fix is cookies from a **throwaway** YouTube account (never your main one):
 
-1. **Cloudflare WARP (free, no account):** set `YOUTUBE_WARP=1`. BitBase creates a free Cloudflare WARP connection and sends **only YouTube** traffic through it. `GET /api/health` shows `"youtube_proxy": "warp on"` once it's running.
-2. **Your own proxy:** set `YOUTUBE_PROXY` to any proxy URL (e.g. a residential proxy `http://user:pass@host:port`). This is the most reliable option, and it takes priority over WARP.
-3. **Cookies:** export cookies from a **throwaway** YouTube account with a browser extension such as *Get cookies.txt LOCALLY*, then paste the file's contents into a `YOUTUBE_COOKIES` environment variable, or save them as `server_py/cookies.txt` (already in `.gitignore`, so **never commit it**).
+1. In a private browser window, sign in to YouTube with the throwaway account and play any video.
+2. Export the cookies with a browser extension such as *Get cookies.txt LOCALLY* (choose youtube.com, Netscape format).
+3. Give them to BitBase in one of these ways:
+   - **Render:** service → **Environment** → **Secret Files** → add a file named `cookies.txt` and paste the contents. BitBase reads `/etc/secrets/cookies.txt`.
+   - Or paste the contents into a `YOUTUBE_COOKIES` environment variable.
+   - On your own computer: save them as `server_py/cookies.txt` (already in `.gitignore`, so **never commit it**).
+4. Redeploy, then check `GET /api/health`: it shows `"cookies": true`.
+
+Cookies expire after a few weeks. When YouTube starts failing again, export fresh ones.
+
+Alternatively, set `YOUTUBE_PROXY` to a (paid) residential proxy URL such as `http://user:pass@host:port`. Only YouTube traffic uses it.
 
 ## iPhone Shortcut
 

@@ -18,11 +18,6 @@ RUN apt-get update && \
 # Deno lets yt-dlp solve YouTube's JavaScript checks (needed for most formats)
 COPY --from=denoland/deno:bin-2.9.6 /deno /usr/local/bin/deno
 
-# Cloudflare WARP tools: only used when YOUTUBE_WARP=1 (helps when YouTube blocks the server)
-ADD https://github.com/ViRb3/wgcf/releases/download/v2.3.0/wgcf_2.3.0_linux_amd64 /usr/local/bin/wgcf
-ADD https://github.com/windtf/wireproxy/releases/download/v1.1.3/wireproxy_linux_amd64.tar.gz /tmp/wireproxy.tar.gz
-RUN tar -xzf /tmp/wireproxy.tar.gz -C /usr/local/bin wireproxy && rm /tmp/wireproxy.tar.gz &&     chmod 755 /usr/local/bin/wgcf /usr/local/bin/wireproxy
-
 COPY server_py/requirements.txt server_py/requirements.txt
 RUN pip install --no-cache-dir -r server_py/requirements.txt
 

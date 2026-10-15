@@ -26,8 +26,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import yt_dlp
 
-import warp
-
 for _stream in (sys.stdout, sys.stderr):   # emoji-safe console output on Windows
     try:
         _stream.reconfigure(encoding="utf-8", errors="replace")
@@ -55,11 +53,9 @@ async def keep_awake():
 
 @asynccontextmanager
 async def lifespan(_app):
-    warp.start_in_background()          # only when YOUTUBE_WARP=1
     task = asyncio.create_task(keep_awake())
     yield
     task.cancel()
-    warp.stop()
 
 app = FastAPI(title="BitBase Downloader API", lifespan=lifespan)
 
@@ -85,23 +81,33 @@ app.add_middleware(
 )
 
 # ── Cookies (fixes YouTube bot detection on servers) ──────────────────────────
+# Where cookies can come from, first match wins:
+#   1. server_py/cookies.txt                  (running on your own computer)
+#   2. /etc/secrets/cookies.txt               (Render "Secret File" named cookies.txt)
+#   3. YOUTUBE_COOKIES environment variable   (paste the file's contents)
+SECRET_COOKIES_FILE = Path(os.environ.get("COOKIES_SECRET_PATH", "/etc/secrets/cookies.txt"))
 _tmp_cookie_path = None
+_cookie_source = "none"
 
 def get_cookies_file():
-    """server_py/cookies.txt if present, else the YOUTUBE_COOKIES env variable."""
-    global _tmp_cookie_path
+    global _tmp_cookie_path, _cookie_source
     if COOKIES_FILE.exists() and COOKIES_FILE.stat().st_size > 100:
+        _cookie_source = "file"
         return str(COOKIES_FILE)
-    env = os.environ.get("YOUTUBE_COOKIES", "").strip()
-    if env:
-        if _tmp_cookie_path and os.path.exists(_tmp_cookie_path):
-            return _tmp_cookie_path
-        tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
-        tmp.write(env.replace('\\n', '\n'))
-        tmp.close()
-        _tmp_cookie_path = tmp.name
+    if _tmp_cookie_path and os.path.exists(_tmp_cookie_path):
         return _tmp_cookie_path
-    return None
+    if SECRET_COOKIES_FILE.exists() and SECRET_COOKIES_FILE.stat().st_size > 100:
+        text, _cookie_source = SECRET_COOKIES_FILE.read_text("utf-8", errors="ignore"), "secret file"
+    else:
+        text = os.environ.get("YOUTUBE_COOKIES", "").strip().replace('\\n', '\n')
+        _cookie_source = "env" if text else "none"
+    if not text:
+        return None
+    # yt-dlp rewrites the cookie file as it goes, so work on a writable copy
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as tmp:
+        tmp.write(text if text.endswith("\n") else text + "\n")
+    _tmp_cookie_path = tmp.name
+    return _tmp_cookie_path
 
 def get_ffmpeg() -> Optional[str]:
     """System ffmpeg if installed, otherwise the copy bundled with the imageio-ffmpeg package."""
@@ -124,8 +130,8 @@ def is_youtube(url: str) -> bool:
     return bool(YOUTUBE_HOSTS.search(host))
 
 def youtube_proxy() -> Optional[str]:
-    """Proxy for YouTube only: YOUTUBE_PROXY (any proxy URL) or the free Cloudflare WARP proxy."""
-    return os.environ.get("YOUTUBE_PROXY", "").strip() or warp.proxy_url()
+    """Optional proxy for YouTube only (e.g. a residential proxy), from YOUTUBE_PROXY."""
+    return os.environ.get("YOUTUBE_PROXY", "").strip() or None
 
 def ydl_opts(url: str = "", **extra) -> dict:
     opts = {
@@ -379,8 +385,8 @@ def health():
         "ytdlp": yt_dlp.version.__version__,
         "ffmpeg": has_ffmpeg(),
         "cookies": get_cookies_file() is not None,
-        "cookies_source": "file" if COOKIES_FILE.exists() else "env" if os.environ.get("YOUTUBE_COOKIES") else "none",
-        "youtube_proxy": "custom" if os.environ.get("YOUTUBE_PROXY") else f"warp {warp.status()}",
+        "cookies_source": _cookie_source,
+        "youtube_proxy": "custom" if os.environ.get("YOUTUBE_PROXY") else "none",
         "backend": "Python + FastAPI",
     }
 
