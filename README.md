@@ -101,7 +101,7 @@ No GitHub connection needed. Render pulls the public repo and builds the `Docker
 5. Click **Deploy**. The first build takes ~5–10 minutes, then the site is live at `https://<name>.onrender.com`.
 
 > A public-URL service doesn't redeploy on its own. After pushing changes, open the service and click **Manual Deploy → Deploy latest commit**.
-> The free plan sleeps after 15 minutes without visitors. The first visit afterwards takes about a minute to wake up.
+> **Stays awake on the free plan:** Render normally sleeps free services after 15 minutes without visitors. BitBase pings its own `/api/health` every 10 minutes when it runs on Render (it reads Render's `RENDER_EXTERNAL_URL`), so it stays awake. One always-on service uses ~744 of Render's 750 free hours a month. Set `KEEP_AWAKE=0` to turn this off.
 
 ### Docker (Railway, Fly.io, any VPS)
 

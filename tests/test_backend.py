@@ -74,3 +74,9 @@ def test_quality_accepts_labels():
     assert main.parse_quality("video", "480p ") == 480
     assert main.parse_quality("video", "4K") == 2160
     assert main.parse_quality("audio", "128kbps") == 128
+
+
+def test_keep_awake_is_off_outside_render(monkeypatch):
+    import asyncio
+    monkeypatch.delenv("RENDER_EXTERNAL_URL", raising=False)
+    asyncio.run(asyncio.wait_for(main.keep_awake(), timeout=1))   # returns at once, no loop

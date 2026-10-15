@@ -18,6 +18,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional, AsyncGenerator
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,7 +33,31 @@ for _stream in (sys.stdout, sys.stderr):   # emoji-safe console output on Window
         pass
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
-app = FastAPI(title="BitBase Downloader API")
+# ── Keep awake on Render's free plan ─────────────────────────────────────────
+# Free Render services sleep after 15 minutes without visitors. Render gives every
+# service its own public address in RENDER_EXTERNAL_URL, so we visit our own
+# /api/health every 10 minutes. Set KEEP_AWAKE=0 to turn this off.
+KEEP_AWAKE_EVERY = 10 * 60
+
+async def keep_awake():
+    url = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not url or os.environ.get("KEEP_AWAKE", "1") == "0":
+        return
+    import urllib.request
+    while True:
+        await asyncio.sleep(KEEP_AWAKE_EVERY)
+        try:
+            await asyncio.to_thread(urllib.request.urlopen, f"{url}/api/health", timeout=30)
+        except Exception as e:
+            print(f"keep-awake ping failed: {e}")
+
+@asynccontextmanager
+async def lifespan(_app):
+    task = asyncio.create_task(keep_awake())
+    yield
+    task.cancel()
+
+app = FastAPI(title="BitBase Downloader API", lifespan=lifespan)
 
 BASE_DIR      = Path(__file__).parent
 DIST_DIR      = BASE_DIR.parent / "dist"
