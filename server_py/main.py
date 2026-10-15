@@ -246,7 +246,7 @@ def ascii_filename(name: str) -> str:
 def clean_error(e: Exception) -> str:
     msg = re.sub(r'\x1b\[[0-9;]*m', '', str(e)).replace('ERROR: ', '').strip()
     if "Sign in to confirm" in msg:
-        return "YouTube is temporarily unavailable on this server. Please try again later, or try a link from another site."
+        return "Couldn't get this video right now. Please try again in a moment."
     if "Unsupported URL" in msg:
         return "This link isn't supported. Paste a direct video, playlist or channel link."
     if "Requested format is not available" in msg:
