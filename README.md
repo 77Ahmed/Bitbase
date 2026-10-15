@@ -77,6 +77,7 @@ Bitbase/
 │   ├── main.py             ← FastAPI app: API + serves the web UI
 │   └── requirements.txt
 ├── tests/                  ← pytest tests for the backend
+├── docs/                   ← iPhone Shortcut guide
 ├── src/                    ← web UI (React + Tailwind)
 │   ├── App.tsx             ← screens and download flow
 │   ├── lib/api.ts          ← talks to the Python API
@@ -112,6 +113,12 @@ YouTube sometimes asks cloud servers to "sign in to confirm you're not a bot". T
 
 - save them as `server_py/cookies.txt` (already in `.gitignore`, so **never commit it**), or
 - paste the file's contents into a `YOUTUBE_COOKIES` environment variable on your host.
+
+## iPhone Shortcut
+
+Share a video from YouTube, TikTok or Instagram, pick a quality, and it's saved straight to your **Photos**. It uses the `/api/direct` endpoint on your deployed server.
+
+👉 **[How to set up the iPhone Shortcut](docs/iphone-shortcut.md)**
 
 ## Tech stack
 
