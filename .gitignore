@@ -1,0 +1,28 @@
+# Node / web UI
+node_modules/
+dist/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Runtime data
+server_py/downloads/
+server_py/messages.json
+
+# Secrets — NEVER commit these
+server_py/cookies.txt
+cookies.txt
+.env
+.env.local
+
+*.zip
+*.log
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

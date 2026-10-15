@@ -1,0 +1,8 @@
+node_modules
+dist
+.venv
+.git
+server_py/downloads
+server_py/cookies.txt
+server_py/messages.json
+__pycache__
