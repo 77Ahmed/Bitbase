@@ -114,7 +114,15 @@ docker run -p 4000:4000 bitbase
 
 ### YouTube blocking your server?
 
-YouTube often asks cloud servers to "sign in to confirm you're not a bot". Other sites aren't affected. The fix is cookies from a **throwaway** YouTube account (never your main one):
+YouTube often asks cloud servers to "sign in to confirm you're not a bot". Other sites aren't affected. BitBase already does three things automatically:
+
+- runs a **PO-token server** ([bgutil](https://github.com/Brainicism/bgutil-ytdlp-pot-provider), included in the Docker image) so requests look like a real YouTube player and HD formats are offered;
+- when YouTube blocks a request, it **retries as other YouTube clients** (TV, mobile web, Safari, …) and remembers the one that worked;
+- uses **IPv4** for YouTube.
+
+To see which strategies work on your server right now, open `/api/yt-check?key=<API_KEY>`.
+
+If YouTube is still blocked, add cookies from a **throwaway** YouTube account (never your main one):
 
 1. In a private browser window, sign in to YouTube with the throwaway account and play any video.
 2. Export the cookies with a browser extension such as *Get cookies.txt LOCALLY* (choose youtube.com, Netscape format).
