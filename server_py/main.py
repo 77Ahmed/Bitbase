@@ -214,7 +214,7 @@ def cleanup_old_downloads():
 def parse_quality(media_type: str, quality: Optional[str]) -> int:
     """Turn the UI's quality value into a safe number (height or kbps).
 
-    Accepts "720", "720p", "320kbps", "4K" (the iPhone Shortcut sends labels like these).
+    Accepts "720", "720p", "320kbps" or "4K".
     """
     text = (quality or "").strip().lower()
     if text in ("4k", "2160p"):
@@ -245,7 +245,7 @@ def build_ydl_opts(media_type: str, quality: Optional[str], out_dir: Path, hook)
         }
     if not ffmpeg:       # can't merge separate video+audio streams -> pick one file that has both
         return {**base, "format": f"best[height<={q}][ext=mp4]/best[height<={q}]/best"}
-    # Up to 1080p prefer H.264 (avc1): it plays everywhere, including the iPhone Photos app.
+    # Up to 1080p prefer H.264 (avc1): it plays on every phone, TV and computer.
     # Above 1080p YouTube only offers VP9/AV1, so take the best available.
     h264 = f"bestvideo[height<={q}][vcodec^=avc1]+bestaudio[ext=m4a]/" if q <= 1080 else ""
     return {**base,
@@ -426,12 +426,12 @@ async def download_single(req: DownloadRequest):
 async def bulk_download_one(index: int, req: DownloadRequest):
     return await run_download(req, {"X-Index": str(index)})
 
-# iPhone Shortcut: one GET request that returns the file, e.g.
-#   /api/shortcut?url=https://youtu.be/...&type=video&quality=1080&key=...
-# Set the SHORTCUT_KEY env variable on your server so only your Shortcut can use it.
-@app.get("/api/shortcut")
-async def shortcut_download(url: str, type: str = "video", quality: str = "", key: str = ""):
-    expected = os.environ.get("SHORTCUT_KEY", "")
+# Direct download: one GET request that returns the file (handy for scripts and automations), e.g.
+#   /api/direct?url=https://youtu.be/...&type=video&quality=1080&key=...
+# Set the API_KEY env variable on your server so only you can use it.
+@app.get("/api/direct")
+async def direct_download(url: str, type: str = "video", quality: str = "", key: str = ""):
+    expected = os.environ.get("API_KEY", "")
     if expected and not secrets.compare_digest(key, expected):
         raise HTTPException(403, "Wrong or missing key.")
     media_type = "audio" if type.lower() in ("audio", "mp3") else "video"

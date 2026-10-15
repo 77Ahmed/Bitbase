@@ -8,7 +8,7 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      - key: SHORTCUT_KEY        # secret for the iPhone Shortcut (Render makes a random one)
+      - key: API_KEY             # secret for /api/direct (Render makes a random one)
         generateValue: true
       - key: YOUTUBE_COOKIES     # optional: paste cookies.txt contents if YouTube blocks the server
         sync: false
