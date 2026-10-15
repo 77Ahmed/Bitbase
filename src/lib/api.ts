@@ -82,11 +82,11 @@ async function streamToDownload(
 // ── Single download ───────────────────────────────────────────────────────────
 export async function downloadSingle(
   url: string, formatId: string, mediaType: string, quality: string,
-  onProgress: (p: number) => void
+  onProgress: (p: number, status?: string) => void
 ): Promise<string> {
   onProgress(5);
   const jobId = newJobId();
-  const stop = listenProgress(jobId, (p) => onProgress(Math.min(p, 99)));
+  const stop = listenProgress(jobId, (p, status) => onProgress(Math.min(p, 99), status));
 
   try {
     const res = await fetch(`${BASE}/api/download`, {

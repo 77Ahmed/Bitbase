@@ -81,22 +81,22 @@ export default function HeroSection({ mode, setMode, onAnalyzeSingle, onAnalyzeB
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="text-center mb-10 animate-on-scroll">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6"
+      <div className="text-center mb-6 sm:mb-10 animate-on-scroll">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 sm:mb-6"
           style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)' }}>
           <Sparkles size={14} className="text-[#38BDF8]" />
           <span className="text-sm text-[#38BDF8] font-medium">1000+ Platforms Supported</span>
         </div>
-        <h1 ref={titleRef} className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-tight">
+        <h1 ref={titleRef} className="text-[2.6rem] sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-3 sm:mb-4 leading-tight">
           <span className="text-gradient-sky glow-text">BitBase</span><br />
           <span className="text-white">Downloader</span>
         </h1>
-        <p className="text-lg text-slate-400 max-w-xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto leading-relaxed">
           Download videos & audio from <span className="text-[#38BDF8] font-semibold">1000+ platforms</span> in HD quality. Fast, free & unlimited.
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3 mb-8 animate-on-scroll">
+      <div className="hidden sm:flex flex-wrap justify-center gap-3 mb-8 animate-on-scroll">
         {siteBadges.map(({ icon: Icon, label, color }) => (
           <div key={label} className="flex items-center gap-2 px-4 py-2.5 rounded-full glass-card glass-card-hover cursor-default">
             <Icon size={18} style={{ color }} />
@@ -109,13 +109,13 @@ export default function HeroSection({ mode, setMode, onAnalyzeSingle, onAnalyzeB
         </div>
       </div>
 
-      <div ref={cardRef} className="glass-card p-6 md:p-8 relative overflow-hidden animate-on-scroll">
+      <div ref={cardRef} className="glass-card p-4 sm:p-6 md:p-8 relative overflow-hidden animate-on-scroll">
         <div className="shimmer absolute inset-0 pointer-events-none" />
 
-        <div className="flex justify-center gap-3 mb-6">
+        <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           {(['single', 'bulk'] as DownloadMode[]).map(m => (
             <button key={m} onClick={() => handleModeSwitch(m)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${mode === m ? 'btn-primary-glow text-white shadow-lg' : 'glass-card text-slate-400 hover:text-slate-200'}`}>
+              className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 cursor-pointer ${mode === m ? 'btn-primary-glow text-white shadow-lg' : 'glass-card text-slate-400 hover:text-slate-200'}`}>
               {m === 'single' ? <><Link size={16} />Single URL</> : <><Layers size={16} />Bulk Download</>}
             </button>
           ))}

@@ -12,7 +12,9 @@ export default function SuccessSection({ onReset, isActive, downloadCount, mode 
   const [downloadsPath, setDownloadsPath] = useState('');
   const isBulk = mode==='bulk'&&downloadCount>1;
 
-  useEffect(()=>{ getDownloadsPath().then(p=>setDownloadsPath(p)).catch(()=>{}); },[]);
+  // The server's Downloads folder only means something when BitBase runs on this same computer
+  const isLocal = ['localhost','127.0.0.1'].includes(window.location.hostname) && !window.matchMedia('(pointer: coarse)').matches;
+  useEffect(()=>{ if (isLocal) getDownloadsPath().then(p=>setDownloadsPath(p)).catch(()=>{}); },[isLocal]);
 
   useEffect(()=>{
     if (!isActive) return;
@@ -57,32 +59,32 @@ export default function SuccessSection({ onReset, isActive, downloadCount, mode 
           </div>
         )}
 
-        <p className="text-slate-400 max-w-md mx-auto mb-3">
-          {isBulk?`All ${downloadCount} files have been saved to your downloads folder.`:'Your file has been saved to your downloads folder.'}
+        <p className="text-slate-400 max-w-md mx-auto mb-6">
+          {isBulk?`All ${downloadCount} files have been saved to your device.`:'Your file has been saved to your device.'}
         </p>
 
         {downloadsPath&&(
-          <p className="text-slate-600 text-xs mb-8 font-mono">{downloadsPath}</p>
+          <p className="text-slate-600 text-xs -mt-3 mb-6 font-mono break-all">{downloadsPath}</p>
         )}
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <button onClick={onReset} className="btn-primary-glow px-8 py-4 flex items-center justify-center gap-3 text-base cursor-pointer">
             <RotateCcw size={18}/>Download Another
           </button>
-          <button onClick={openDownloads}
+          {downloadsPath && <button onClick={openDownloads}
             className="px-8 py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-3 transition-all duration-300 cursor-pointer"
             style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(56,189,248,0.2)',color:'#38BDF8'}}>
             <FolderOpen size={18}/>Open Downloads Folder
-          </button>
+          </button>}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
           {[
             {icon:Zap,text:'Lightning Fast',color:'#38BDF8'},
             {icon:ShieldCheck,text:'100% Safe',color:'#34D399'},
             {icon:Download,text:'Unlimited Downloads',color:'#A78BFA'},
           ].map(({icon:Icon,text,color})=>(
-            <div key={text} className="flex items-center gap-2 justify-center p-3 rounded-xl" style={{background:`${color}0a`,border:`1px solid ${color}20`}}>
+            <div key={text} className="flex items-center gap-2 justify-center px-3 py-2 sm:p-3 rounded-xl whitespace-nowrap" style={{background:`${color}0a`,border:`1px solid ${color}20`}}>
               <Icon size={14} style={{color}}/><span className="text-slate-300 text-xs font-medium">{text}</span>
             </div>
           ))}

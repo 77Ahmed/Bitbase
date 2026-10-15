@@ -306,3 +306,8 @@
     background-clip: text;
   }
 }
+
+/* iPhone Safari zooms into any input smaller than 16px — keep form fields at 16px on phones */
+@media (max-width: 640px) {
+  input, textarea, select { font-size: 16px !important; }
+}

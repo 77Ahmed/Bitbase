@@ -114,6 +114,7 @@ function App() {
     setIsDownloading(true);
     setProgress(0);
     setError('');
+    setStatusText('');
     try {
       // video: height of the chosen format · audio: chosen MP3 bitrate
       const quality = mediaType === 'video' && selectedFormat ? String(selectedFormat.height) : selectedQuality;
@@ -122,7 +123,7 @@ function App() {
         selectedFormat?.id || 'best',
         mediaType,
         quality,
-        p => setProgress(p)
+        (p, status) => { setProgress(p); if (status) setStatusText(status); }
       );
       setIsDownloading(false);
       const dlPath = await getDownloadsPath().catch(() => '~/Downloads');

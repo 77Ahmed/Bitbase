@@ -145,13 +145,16 @@ class ProgressHook:
             file_pct = min(downloaded / total * 100, 100) if total > 0 else 0
             start, span = (5, 65) if self.files_done == 0 else (70, 20)
             self.last = max(self.last, round(start + file_pct / 100 * span, 1))
-            speed = (d.get("_speed_str") or "").strip()
+            # one percentage (the ring) is enough — the text says what is downloading and how fast
+            info = d.get("info_dict") or {}
+            part = "video" if info.get("vcodec") not in (None, "none") else "audio"
+            speed = (d.get("_speed_str") or "").strip().replace("KiB", "KB").replace("MiB", "MB")
             set_progress(self.job_id, self.last,
-                         f"Downloading... {round(file_pct)}%" + (f" · {speed}" if speed else ""))
+                         f"Downloading {part}..." + (f" · {speed}" if speed and "Unknown" not in speed else ""))
         elif d["status"] == "finished":
             self.files_done += 1
             self.last = max(self.last, 70 if self.files_done == 1 else 90)
-            set_progress(self.job_id, self.last, "Processing...")
+            set_progress(self.job_id, self.last, "Merging video and audio..." if self.files_done > 1 else "Processing...")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def format_duration(seconds):
@@ -354,7 +357,7 @@ async def get_info(req: InfoRequest):
                 "id": f["format_id"],
                 "label": f"{h}p{' 4K' if h >= 2160 else ' Full HD' if h >= 1080 else ' HD' if h >= 720 else ''}",
                 "height": h, "ext": "mp4",
-                "size": f"~{round(fsize/1024/1024)} MB" if fsize else "Unknown",
+                "size": (f"~{round(fsize/1024/1024)} MB" if fsize >= 1024*1024 else "< 1 MB") if fsize else "Unknown",
                 "badge": "4K" if h >= 2160 else f"{h}p",
             })
     formats.sort(key=lambda x: x["height"], reverse=True)

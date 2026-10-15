@@ -79,15 +79,15 @@ export default function BulkSection({ videos, selectedIds, setSelectedIds, media
 
   return (
     <div className="w-full max-w-5xl mx-auto">
-      <div ref={cardRef} className="glass-card p-6 md:p-8">
+      <div ref={cardRef} className="glass-card p-4 sm:p-6 md:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm cursor-pointer"><ArrowLeft size={15}/>Back</button>
-          <div className="text-center">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 mb-6">
+          <button onClick={onBack} className="order-1 flex items-center gap-2 text-slate-400 hover:text-white text-sm cursor-pointer"><ArrowLeft size={15}/>Back</button>
+          <div className="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 min-w-0 text-center sm:px-4">
             <h2 className="text-xl font-bold text-white">Bulk Download</h2>
-            <p className="text-xs text-slate-500 truncate max-w-xs mt-0.5">{inputUrl}</p>
+            <p className="text-xs text-slate-500 truncate mt-0.5">{inputUrl}</p>
           </div>
-          <div className="text-right">
+          <div className="order-2 sm:order-3 text-right">
             <p className="text-[#38BDF8] font-bold text-sm">{videos.length} videos found</p>
             <p className="text-slate-500 text-xs">{selectedIds.length} selected</p>
           </div>
@@ -111,7 +111,7 @@ export default function BulkSection({ videos, selectedIds, setSelectedIds, media
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[{label:'Total Found',value:videos.length},{label:'Selected',value:selectedIds.length},{label:'Est. Size',value:selectedIds.length>0?estimateSize:'—'}].map(({label,value})=>(
             <div key={label} className="rounded-xl p-3 text-center" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)'}}>
-              <p className="text-white font-bold text-xl leading-tight">{value}</p>
+              <p className="text-white font-bold text-lg sm:text-xl leading-tight whitespace-nowrap">{value}</p>
               <p className="text-slate-500 text-xs mt-0.5">{label}</p>
             </div>
           ))}

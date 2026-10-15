@@ -10,8 +10,10 @@ export default function HistorySection({ history, onClear }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Show the server's Downloads path only when BitBase runs on this same computer
   useEffect(() => {
-    getDownloadsPath().then(p => setDownloadsPath(p)).catch(() => {});
+    const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) && !window.matchMedia('(pointer: coarse)').matches;
+    if (isLocal) getDownloadsPath().then(p => setDownloadsPath(p)).catch(() => {});
   }, []);
 
   const sep = downloadsPath.includes('\\') ? '\\' : '/';
@@ -44,7 +46,7 @@ export default function HistorySection({ history, onClear }: Props) {
     <div className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-8 animate-on-scroll">
         <h2 className="text-4xl font-extrabold text-white mb-3">Download <span className="text-gradient-sky">History</span></h2>
-        <p className="text-slate-400 text-sm">Click any path to copy it. Files are in your Downloads folder.</p>
+        <p className="text-slate-400 text-sm">Everything you've downloaded on this device.</p>
       </div>
 
       <div className="glass-card p-6 animate-on-scroll">
