@@ -26,6 +26,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import yt_dlp
 
+import warp
+
 for _stream in (sys.stdout, sys.stderr):   # emoji-safe console output on Windows
     try:
         _stream.reconfigure(encoding="utf-8", errors="replace")
@@ -53,9 +55,11 @@ async def keep_awake():
 
 @asynccontextmanager
 async def lifespan(_app):
+    warp.start_in_background()          # only when YOUTUBE_WARP=1
     task = asyncio.create_task(keep_awake())
     yield
     task.cancel()
+    warp.stop()
 
 app = FastAPI(title="BitBase Downloader API", lifespan=lifespan)
 
@@ -113,7 +117,17 @@ def get_ffmpeg() -> Optional[str]:
 def has_ffmpeg() -> bool:
     return get_ffmpeg() is not None
 
-def ydl_opts(**extra) -> dict:
+YOUTUBE_HOSTS = re.compile(r"(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$", re.IGNORECASE)
+
+def is_youtube(url: str) -> bool:
+    host = urllib.parse.urlparse(url.strip()).hostname or ""
+    return bool(YOUTUBE_HOSTS.search(host))
+
+def youtube_proxy() -> Optional[str]:
+    """Proxy for YouTube only: YOUTUBE_PROXY (any proxy URL) or the free Cloudflare WARP proxy."""
+    return os.environ.get("YOUTUBE_PROXY", "").strip() or warp.proxy_url()
+
+def ydl_opts(url: str = "", **extra) -> dict:
     opts = {
         "quiet": True, "no_warnings": True, "noprogress": True,
         "js_runtimes": {"deno": {}, "node": {}},   # YouTube needs a JS runtime for most formats
@@ -125,6 +139,10 @@ def ydl_opts(**extra) -> dict:
     cf = get_cookies_file()
     if cf:
         opts["cookiefile"] = cf
+    if url and is_youtube(url):
+        proxy = youtube_proxy()
+        if proxy:
+            opts["proxy"] = proxy
     return opts
 
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -252,10 +270,11 @@ def parse_quality(media_type: str, quality: Optional[str]) -> int:
         return q if 64 <= q <= 320 else 320
     return q if 144 <= q <= 4320 else 1080
 
-def build_ydl_opts(media_type: str, quality: Optional[str], out_dir: Path, hook) -> dict:
+def build_ydl_opts(media_type: str, quality: Optional[str], out_dir: Path, hook, url: str = "") -> dict:
     ffmpeg = has_ffmpeg()
     q = parse_quality(media_type, quality)
     base = ydl_opts(
+        url,
         noplaylist=True,
         progress_hooks=[hook],
         outtmpl=str(out_dir / "%(title).150B.%(ext)s"),
@@ -327,8 +346,10 @@ def new_job(job_id: Optional[str]) -> tuple[str, Path]:
 async def run_download(req: DownloadRequest, extra_headers: Optional[dict] = None):
     job_id, out_dir = new_job(req.jobId)
     try:
-        opts = build_ydl_opts(req.mediaType or "video", req.quality, out_dir, ProgressHook(job_id))
-        await asyncio.get_running_loop().run_in_executor(None, lambda: _dl(opts, req.url))
+        loop = asyncio.get_running_loop()
+        opts = await loop.run_in_executor(None, lambda: build_ydl_opts(
+            req.mediaType or "video", req.quality, out_dir, ProgressHook(job_id), req.url))
+        await loop.run_in_executor(None, lambda: _dl(opts, req.url))
         files = [f for f in out_dir.iterdir() if f.is_file() and not f.name.endswith((".part", ".ytdl"))]
         if not files: raise Exception("No file was downloaded")
         file_path = max(files, key=lambda f: f.stat().st_size)
@@ -359,6 +380,7 @@ def health():
         "ffmpeg": has_ffmpeg(),
         "cookies": get_cookies_file() is not None,
         "cookies_source": "file" if COOKIES_FILE.exists() else "env" if os.environ.get("YOUTUBE_COOKIES") else "none",
+        "youtube_proxy": "custom" if os.environ.get("YOUTUBE_PROXY") else f"warp {warp.status()}",
         "backend": "Python + FastAPI",
     }
 
@@ -371,7 +393,7 @@ def downloads_path():
 async def get_info(req: InfoRequest):
     try:
         def fetch():
-            opts = ydl_opts(noplaylist=True, extract_flat="in_playlist", playlistend=1)
+            opts = ydl_opts(req.url, noplaylist=True, extract_flat="in_playlist", playlistend=1)
             with yt_dlp.YoutubeDL(opts) as ydl:
                 return ydl.extract_info(req.url.strip(), download=False)
         info = await asyncio.get_running_loop().run_in_executor(None, fetch)
@@ -412,7 +434,7 @@ async def get_info(req: InfoRequest):
 async def get_playlist(req: PlaylistRequest):
     try:
         def fetch():
-            opts = ydl_opts(extract_flat="in_playlist", playlistend=MAX_PLAYLIST_ITEMS)
+            opts = ydl_opts(req.url, extract_flat="in_playlist", playlistend=MAX_PLAYLIST_ITEMS)
             with yt_dlp.YoutubeDL(opts) as ydl:
                 return ydl.extract_info(req.url.strip(), download=False)
         info = await asyncio.get_running_loop().run_in_executor(None, fetch)

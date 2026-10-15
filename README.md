@@ -114,10 +114,11 @@ docker run -p 4000:4000 bitbase
 
 ### YouTube blocking your server?
 
-YouTube sometimes asks cloud servers to "sign in to confirm you're not a bot". To fix this, export cookies from a **throwaway** YouTube account with a browser extension such as *Get cookies.txt LOCALLY*, then either:
+YouTube often asks cloud servers to "sign in to confirm you're not a bot". Other sites aren't affected. Try these in order:
 
-- save them as `server_py/cookies.txt` (already in `.gitignore`, so **never commit it**), or
-- paste the file's contents into a `YOUTUBE_COOKIES` environment variable on your host.
+1. **Cloudflare WARP (free, no account):** set `YOUTUBE_WARP=1`. BitBase creates a free Cloudflare WARP connection and sends **only YouTube** traffic through it. `GET /api/health` shows `"youtube_proxy": "warp on"` once it's running.
+2. **Your own proxy:** set `YOUTUBE_PROXY` to any proxy URL (e.g. a residential proxy `http://user:pass@host:port`). This is the most reliable option, and it takes priority over WARP.
+3. **Cookies:** export cookies from a **throwaway** YouTube account with a browser extension such as *Get cookies.txt LOCALLY*, then paste the file's contents into a `YOUTUBE_COOKIES` environment variable, or save them as `server_py/cookies.txt` (already in `.gitignore`, so **never commit it**).
 
 ## iPhone Shortcut
 

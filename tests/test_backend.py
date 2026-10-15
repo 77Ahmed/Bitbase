@@ -80,3 +80,17 @@ def test_keep_awake_is_off_outside_render(monkeypatch):
     import asyncio
     monkeypatch.delenv("RENDER_EXTERNAL_URL", raising=False)
     asyncio.run(asyncio.wait_for(main.keep_awake(), timeout=1))   # returns at once, no loop
+
+
+def test_only_youtube_links_use_the_proxy(monkeypatch):
+    monkeypatch.setenv("YOUTUBE_PROXY", "socks5://127.0.0.1:1")
+    assert main.ydl_opts("https://youtu.be/abc")["proxy"] == "socks5://127.0.0.1:1"
+    assert main.ydl_opts("https://m.youtube.com/watch?v=abc")["proxy"] == "socks5://127.0.0.1:1"
+    assert "proxy" not in main.ydl_opts("https://www.tiktok.com/@a/video/1")
+    assert "proxy" not in main.ydl_opts("https://notyoutube.com/x")
+
+
+def test_warp_is_off_by_default(monkeypatch):
+    monkeypatch.delenv("YOUTUBE_WARP", raising=False)
+    import warp
+    assert warp.status() == "off" and warp.proxy_url() is None
