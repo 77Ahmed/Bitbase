@@ -83,7 +83,6 @@ Bitbase/
 │   ├── lib/api.ts          ← talks to the Python API
 │   └── sections/           ← Hero, Analyze, Options, Bulk, Progress, Success, History…
 ├── Dockerfile              ← deploy anywhere with Docker
-├── render.yaml             ← one-click Render setup
 └── .github/workflows/ci.yml← runs tests + UI build on every push
 ```
 
@@ -91,11 +90,17 @@ Bitbase/
 
 ### Render (free)
 
-1. Sign in at [render.com](https://render.com) with GitHub.
-2. **New → Blueprint** → choose this repo. Render reads `render.yaml` and builds the Docker image (takes ~5–10 min the first time).
-3. When it's live, your site is at `https://bitbase-xxxx.onrender.com`.
-4. Open the service → **Environment** to see the generated `API_KEY` (protects `/api/direct`).
+No GitHub connection needed. Render pulls the public repo and builds the `Dockerfile`.
 
+1. In your Render project: **New → Web Service → Public Git Repository**, then paste `https://github.com/77Ahmed/Bitbase`.
+2. Set **Language: Docker**, **Branch: main**, **Instance type: Free**.
+3. Under **Environment Variables**, add:
+   - `API_KEY`: any long random value (Render's **Generate** button works). It protects `/api/direct`.
+   - `YOUTUBE_COOKIES` (optional): only if YouTube blocks the server, see below.
+4. Under **Advanced**, set **Health Check Path** to `/api/health`.
+5. Click **Deploy**. The first build takes ~5–10 minutes, then the site is live at `https://<name>.onrender.com`.
+
+> A public-URL service doesn't redeploy on its own. After pushing changes, open the service and click **Manual Deploy → Deploy latest commit**.
 > The free plan sleeps after 15 minutes without visitors. The first visit afterwards takes about a minute to wake up.
 
 ### Docker (Railway, Fly.io, any VPS)
