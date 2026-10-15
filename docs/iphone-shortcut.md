@@ -46,6 +46,6 @@ Make a second Shortcut. In step 5 use `&type=audio` instead of the quality, and 
 
 ## If it doesn't work
 
-- **Takes about a minute the first time:** free Render sleeps after 15 minutes without use. Run it again once it's awake.
 - **"Wrong or missing key":** the key in step 5 doesn't match `API_KEY` on Render.
-- **YouTube fails but TikTok/Instagram work:** YouTube is blocking the server. On Render, add cookies from a throwaway Google account to `YOUTUBE_COOKIES`.
+- **YouTube fails but TikTok/Instagram work:** YouTube is blocking the server. On Render, add fresh cookies from a throwaway Google account as the Secret File `cookies.txt` (see the main README).
+- **Very slow or times out:** long or 4K videos take a while on the free server. Pick 720p or lower.

@@ -100,33 +100,3 @@ def test_cookies_from_render_secret_file(tmp_path, monkeypatch):
     assert path and path != str(secret)          # a writable copy, not the read-only original
     assert Path(path).read_text() == secret.read_text()
     assert main._cookie_source == "secret file"
-
-
-def test_youtube_fallback_tries_next_strategy_on_bot_check(monkeypatch):
-    monkeypatch.setattr(main, "_best_strategy", 0)
-    tried = []
-    def run(opts):
-        tried.append(opts.get("extractor_args"))
-        if len(tried) < 2:
-            raise Exception("Sign in to confirm you're not a bot")
-        return "ok"
-    assert main.with_youtube_fallback("https://youtu.be/x", {}, run) == "ok"
-    assert tried[1] == {"youtube": {"player_client": ["tv"]}}
-    assert main._best_strategy == 1                       # remembered for next time
-
-
-def test_other_errors_are_not_retried():
-    calls = []
-    def run(opts):
-        calls.append(1)
-        raise Exception("Video unavailable")
-    try:
-        main.with_youtube_fallback("https://youtu.be/x", {}, run)
-    except Exception as e:
-        assert "unavailable" in str(e)
-    assert len(calls) == 1
-
-
-def test_yt_check_needs_api_key(monkeypatch):
-    monkeypatch.delenv("API_KEY", raising=False)
-    assert client.get("/api/yt-check").status_code == 403

@@ -157,57 +157,9 @@ def ydl_opts(url: str = "", **extra) -> dict:
             opts["source_address"] = "0.0.0.0"   # force IPv4: YouTube is stricter with IPv6 server addresses
     return opts
 
-# ── YouTube on cloud servers ──────────────────────────────────────────────────
-# When YouTube answers "Sign in to confirm you're not a bot", try other YouTube
-# clients (and finally no cookies) before giving up. The strategy that worked last
-# is tried first next time.
-def _clients(*names):
-    return {"extractor_args": {"youtube": {"player_client": list(names)}}}
-
-YT_STRATEGIES = [
-    ("default", {}),
-    ("tv", _clients("tv")),
-    ("mweb", _clients("mweb")),
-    ("web_safari", _clients("web_safari")),
-    ("default, no cookies", {"cookiefile": None}),
-    ("tv, no cookies", {**_clients("tv"), "cookiefile": None}),
-    ("android_vr, no cookies", {**_clients("android_vr"), "cookiefile": None}),
-]
-_best_strategy = 0
-
-def is_bot_check(e: Exception) -> bool:
-    msg = str(e)
-    return "Sign in to confirm" in msg or "not a bot" in msg
-
-def strategy_opts(opts: dict, extra: dict) -> dict:
-    merged = {**opts, **extra}
-    if merged.get("cookiefile") is None:
-        merged.pop("cookiefile", None)
-    return merged
-
-def with_youtube_fallback(url: str, opts: dict, run):
-    """Call run(opts). For YouTube links, retry other strategies when YouTube blocks the server."""
-    global _best_strategy
-    if not is_youtube(url):
-        return run(opts)
-    order = [_best_strategy] + [i for i in range(len(YT_STRATEGIES)) if i != _best_strategy]
-    last_error = None
-    for i in order:
-        try:
-            result = run(strategy_opts(opts, YT_STRATEGIES[i][1]))
-            _best_strategy = i
-            return result
-        except Exception as e:
-            if not is_bot_check(e):
-                raise
-            last_error = e
-    raise last_error
-
 def extract_info(url: str, opts: dict) -> dict:
-    def run(o):
-        with yt_dlp.YoutubeDL(o) as ydl:
-            return ydl.extract_info(url, download=False)
-    return with_youtube_fallback(url, opts, run)
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        return ydl.extract_info(url, download=False)
 
 # ── Models ────────────────────────────────────────────────────────────────────
 class InfoRequest(BaseModel):
@@ -294,7 +246,7 @@ def ascii_filename(name: str) -> str:
 def clean_error(e: Exception) -> str:
     msg = re.sub(r'\x1b\[[0-9;]*m', '', str(e)).replace('ERROR: ', '').strip()
     if "Sign in to confirm" in msg:
-        return "YouTube is blocking this server (bot check). Add cookies — see the README."
+        return "YouTube is temporarily unavailable on this server. Please try again later, or try a link from another site."
     if "Unsupported URL" in msg:
         return "This link isn't supported. Paste a direct video, playlist or channel link."
     if "Requested format is not available" in msg:
@@ -362,10 +314,8 @@ def build_ydl_opts(media_type: str, quality: Optional[str], out_dir: Path, hook,
     }
 
 def _dl(opts, url):
-    def run(o):
-        with yt_dlp.YoutubeDL(o) as ydl:
-            ydl.download([url])
-    with_youtube_fallback(url, opts, run)
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        ydl.download([url])
 
 MIME_TYPES = {".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".webm": "video/webm",
               ".mp4": "video/mp4", ".mkv": "video/x-matroska", ".opus": "audio/ogg"}
@@ -541,9 +491,9 @@ async def bulk_download_one(index: int, req: DownloadRequest):
 # Direct download: one GET request that returns the file (handy for scripts and automations), e.g.
 #   /api/direct?url=https://youtu.be/...&type=video&quality=1080&key=...
 # Set the API_KEY env variable on your server so only you can use it.
-def check_key(key: str, required: bool = False) -> None:
+def check_key(key: str) -> None:
     expected = os.environ.get("API_KEY", "")
-    if (required and not expected) or (expected and not secrets.compare_digest(key, expected)):
+    if expected and not secrets.compare_digest(key, expected):
         raise HTTPException(403, "Wrong or missing key.")
 
 @app.get("/api/direct")
@@ -552,28 +502,6 @@ async def direct_download(url: str, type: str = "video", quality: str = "", key:
     media_type = "audio" if type.lower() in ("audio", "mp3") else "video"
     return await run_download(DownloadRequest(url=url.strip(), mediaType=media_type,
                                               quality=quality or ("320" if media_type == "audio" else "1080")))
-
-# Admin check: which YouTube strategy works on this server right now?
-#   /api/yt-check?key=<API_KEY>
-@app.get("/api/yt-check")
-async def youtube_check(key: str = "", url: str = "https://www.youtube.com/watch?v=jNQXAC9IVRw"):
-    check_key(key, required=True)
-    def run():
-        results = []
-        for name, extra in YT_STRATEGIES:
-            started = time.time()
-            try:
-                with yt_dlp.YoutubeDL(strategy_opts(ydl_opts(url, noplaylist=True), extra)) as ydl:
-                    info = ydl.extract_info(url, download=False)
-                heights = [f.get("height") or 0 for f in info.get("formats") or [] if f.get("vcodec") != "none"]
-                results.append({"strategy": name, "ok": True, "best": f"{max(heights, default=0)}p",
-                                "seconds": round(time.time() - started, 1)})
-            except Exception as e:
-                results.append({"strategy": name, "ok": False, "error": clean_error(e)[:160],
-                                "seconds": round(time.time() - started, 1)})
-        return results
-    return {"po_token_server": pot.status(), "cookies": get_cookies_file() is not None,
-            "results": await asyncio.to_thread(run)}
 
 # ── Contact ───────────────────────────────────────────────────────────────────
 @app.post("/api/contact")
