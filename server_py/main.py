@@ -10,6 +10,7 @@ import time
 import uuid
 import sys
 import shutil
+import secrets
 import asyncio
 import tempfile
 import urllib.parse
@@ -238,8 +239,11 @@ def build_ydl_opts(media_type: str, quality: Optional[str], out_dir: Path, hook)
         }
     if not ffmpeg:       # can't merge separate video+audio streams -> pick one file that has both
         return {**base, "format": f"best[height<={q}][ext=mp4]/best[height<={q}]/best"}
+    # Up to 1080p prefer H.264 (avc1): it plays everywhere, including the iPhone Photos app.
+    # Above 1080p YouTube only offers VP9/AV1, so take the best available.
+    h264 = f"bestvideo[height<={q}][vcodec^=avc1]+bestaudio[ext=m4a]/" if q <= 1080 else ""
     return {**base,
-        "format": f"bestvideo[height<={q}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<={q}]+bestaudio/best[height<={q}]/best",
+        "format": f"{h264}bestvideo[height<={q}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<={q}]+bestaudio/best[height<={q}]/best",
         "merge_output_format": "mp4",
     }
 
@@ -415,6 +419,18 @@ async def download_single(req: DownloadRequest):
 @app.post("/api/bulk-download/{index}")
 async def bulk_download_one(index: int, req: DownloadRequest):
     return await run_download(req, {"X-Index": str(index)})
+
+# iPhone Shortcut: one GET request that returns the file, e.g.
+#   /api/shortcut?url=https://youtu.be/...&type=video&quality=1080&key=...
+# Set the SHORTCUT_KEY env variable on your server so only your Shortcut can use it.
+@app.get("/api/shortcut")
+async def shortcut_download(url: str, type: str = "video", quality: str = "", key: str = ""):
+    expected = os.environ.get("SHORTCUT_KEY", "")
+    if expected and not secrets.compare_digest(key, expected):
+        raise HTTPException(403, "Wrong or missing key.")
+    media_type = "audio" if type.lower() in ("audio", "mp3") else "video"
+    return await run_download(DownloadRequest(url=url.strip(), mediaType=media_type,
+                                              quality=quality or ("320" if media_type == "audio" else "1080")))
 
 # ── Contact ───────────────────────────────────────────────────────────────────
 @app.post("/api/contact")

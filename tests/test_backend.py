@@ -54,3 +54,16 @@ def test_contact_validation():
 
 def test_unknown_api_route_is_404():
     assert client.get("/api/does-not-exist").status_code == 404
+
+
+def test_shortcut_requires_key_when_set(monkeypatch):
+    monkeypatch.setenv("SHORTCUT_KEY", "secret")
+    r = client.get("/api/shortcut", params={"url": "https://youtu.be/x", "key": "wrong"})
+    assert r.status_code == 403
+
+
+def test_up_to_1080p_prefers_h264_for_iphone(tmp_path):
+    opts = main.build_ydl_opts("video", "1080", tmp_path, hook=lambda d: None)
+    assert opts["format"].startswith("bestvideo[height<=1080][vcodec^=avc1]")
+    opts_4k = main.build_ydl_opts("video", "2160", tmp_path, hook=lambda d: None)
+    assert "avc1" not in opts_4k["format"]
