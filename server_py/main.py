@@ -212,9 +212,15 @@ def cleanup_old_downloads():
             progress_store.pop(job_id, None)
 
 def parse_quality(media_type: str, quality: Optional[str]) -> int:
-    """Turn the UI's quality value into a safe number (height or kbps)."""
+    """Turn the UI's quality value into a safe number (height or kbps).
+
+    Accepts "720", "720p", "320kbps", "4K" (the iPhone Shortcut sends labels like these).
+    """
+    text = (quality or "").strip().lower()
+    if text in ("4k", "2160p"):
+        text = "2160"
     try:
-        q = int(float(quality or 0))
+        q = int(float(re.sub(r"[^\d.]", "", text) or 0))
     except ValueError:
         q = 0
     if media_type == "audio":

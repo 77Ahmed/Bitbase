@@ -135,12 +135,18 @@ Videos come back as **H.264 MP4**, the format the Photos app plays.
 |---|---|---|
 | 1 | **Get URLs from Input** | Shortcut Input |
 | 2 | **URL Encode** | URLs |
-| 3 | **Text** | `https://YOUR-APP.onrender.com/api/shortcut?url=`**URL Encoded Text**`&key=YOUR_KEY` |
-| 4 | **Get Contents of URL** | Text |
-| 5 | **Save to Photo Album** | Contents of URL → Recents |
-| 6 | **Show Notification** | `Saved to Photos ✅` |
+| 3 | **List** | `1080p`, `720p`, `480p`, `360p` (one per line) |
+| 4 | **Choose from List** | List · Prompt: `Video quality?` |
+| 5 | **Text** | `https://YOUR-APP.onrender.com/api/shortcut?url=`**URL Encoded Text**`&quality=`**Chosen Item**`&key=YOUR_KEY` |
+| 6 | **Get Contents of URL** | Text |
+| 7 | **Save to Photo Album** | Contents of URL → Recents |
+| 8 | **Show Notification** | `Saved to Gallery ✅` |
 
-For **music**, add `&type=audio` to the Text in step 3 and replace step 5 with **Save File** (Photos can't store MP3s).
+The *URL Encoded Text* and *Chosen Item* parts are blue variables: tap in the Text box → **Select Variable** → pick the result of step 2 or step 4.
+
+Each time you share a link, the Shortcut asks **Video quality?** and then saves the video to **Photos → Recents**. The list stops at 1080p because YouTube's 4K isn't H.264, and the iPhone gallery often can't play it.
+
+For **music**, make a second Shortcut. In step 5 use `&type=audio` instead of the quality, and replace step 7 with **Save File** (Photos can't store MP3s).
 
 **Use it:** in YouTube, tap **Share → More → BitBase**. Or copy a link, then tap the BitBase Shortcut (add it to your Home Screen from its ⓘ menu). The first time, iOS asks for permission to connect to your server and access Photos; tap **Always Allow**.
 

@@ -67,3 +67,10 @@ def test_up_to_1080p_prefers_h264_for_iphone(tmp_path):
     assert opts["format"].startswith("bestvideo[height<=1080][vcodec^=avc1]")
     opts_4k = main.build_ydl_opts("video", "2160", tmp_path, hook=lambda d: None)
     assert "avc1" not in opts_4k["format"]
+
+
+def test_quality_labels_from_iphone_shortcut():
+    assert main.parse_quality("video", "720p") == 720
+    assert main.parse_quality("video", "480p ") == 480
+    assert main.parse_quality("video", "4K") == 2160
+    assert main.parse_quality("audio", "128kbps") == 128
